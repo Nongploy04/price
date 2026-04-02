@@ -95,6 +95,10 @@
                         <span class="text-muted fw-bold">พื้นที่ติดต่อ:</span>
                         <span id="neighborsText" class="text-primary"></span>
                     </div>
+                    <div id="distanceBox" class="mt-1 p-2 rounded border" style="display:none; font-size: 0.75rem; background-color: #f8f9fa;">
+                        <span class="text-secondary fw-bold">🚚 ระยะห่างถึง อบต.สงยาง (ยโสธร):</span> 
+                        <span id="distanceText" class="fw-bold text-success"></span>
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small text-muted">เดือน</label>
@@ -322,6 +326,24 @@
         "นราธิวาส": ["ปัตตานี", "ยะลา"]
     };
 
+    const PROVINCE_DISTANCE = {
+        "ยโสธร": 35, "อุบลราชธานี": 120, "อำนาจเจริญ": 90, "ร้อยเอ็ด": 110, "ศรีสะเกษ": 80,
+        "สุรินทร์": 150, "มหาสารคาม": 160, "บุรีรัมย์": 200, "กาฬสินธุ์": 180, "มุกดาหาร": 140,
+        "นครราชสีมา": 300, "ขอนแก่น": 240, "สกลนคร": 240, "นครพนม": 250, "อุดรธานี": 350,
+        "หนองบัวลำภู": 380, "บึงกาฬ": 420, "หนองคาย": 400, "เลย": 440, "ชัยภูมิ": 340,
+        "สระแก้ว": 400, "ปราจีนบุรี": 450, "สระบุรี": 420, "นครนายก": 460, "ฉะเชิงเทรา": 480,
+        "ชลบุรี": 520, "ระยอง": 580, "จันทบุรี": 600, "ตราด": 670, "กรุงเทพมหานคร": 530,
+        "ปทุมธานี": 510, "นนทบุรี": 540, "สมุทรปราการ": 550, "สมุทรสาคร": 570, "นครปฐม": 580,
+        "พระนครศรีอยุธยา": 490, "อ่างทอง": 510, "สิงห์บุรี": 530, "ลพบุรี": 460, "ชัยนาท": 560,
+        "สุพรรณบุรี": 580, "นครสวรรค์": 540, "อุทัยธานี": 570, "เพชรบูรณ์": 500, "พิจิตร": 580,
+        "พิษณุโลก": 600, "กำแพงเพชร": 650, "ตาก": 720, "สุโขทัย": 660, "อุตรดิตถ์": 710,
+        "แพร่": 750, "น่าน": 860, "พะเยา": 890, "ลำปาง": 830, "ลำพูน": 900, "เชียงใหม่": 920,
+        "เชียงราย": 980, "แม่ฮ่องสอน": 1150, "กาญจนบุรี": 650, "ราชบุรี": 620, "สมุทรสงคราม": 610,
+        "เพชรบุรี": 650, "ประจวบคีรีขันธ์": 800, "ชุมพร": 1000, "ระนอง": 1120, "สุราษฎร์ธานี": 1180,
+        "พังงา": 1330, "ภูเก็ต": 1410, "กระบี่": 1330, "นครศรีธรรมราช": 1300, "ตรัง": 1420,
+        "พัทลุง": 1400, "สงขลา": 1480, "สตูล": 1540, "ปัตตานี": 1580, "ยะลา": 1620, "นราธิวาส": 1680
+    };
+
     function changeProvinceByNeighbor(nName) {
         const targetP = provinces.find(p => p.name === nName);
         if (targetP) {
@@ -345,6 +367,16 @@
             neighborsBox.style.display = "block";
         } else {
             neighborsBox.style.display = "none";
+        }
+
+        const distanceBox = document.getElementById("distanceBox");
+        const distanceText = document.getElementById("distanceText");
+        
+        if (provName && PROVINCE_DISTANCE[provName] !== undefined) {
+            distanceText.innerText = `ประมาณ ${PROVINCE_DISTANCE[provName]} กิโลเมตร`;
+            distanceBox.style.display = "block";
+        } else {
+            distanceBox.style.display = "none";
         }
     }
 
