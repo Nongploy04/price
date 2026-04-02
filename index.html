@@ -322,6 +322,14 @@
         "นราธิวาส": ["ปัตตานี", "ยะลา"]
     };
 
+    function changeProvinceByNeighbor(nName) {
+        const targetP = provinces.find(p => p.name === nName);
+        if (targetP) {
+            document.getElementById("provinceSelect").value = targetP.id;
+            updateNeighbors();
+        }
+    }
+
     function updateNeighbors() {
         const provSelect = document.getElementById("provinceSelect");
         const selId = provSelect.value;
@@ -331,7 +339,9 @@
         const neighborsText = document.getElementById("neighborsText");
         
         if (provName && PROVINCE_NEIGHBORS[provName]) {
-            neighborsText.innerText = PROVINCE_NEIGHBORS[provName].join(', ');
+            neighborsText.innerHTML = PROVINCE_NEIGHBORS[provName].map(n => 
+                `<a href="javascript:void(0)" onclick="changeProvinceByNeighbor('${n}')" class="text-decoration-underline text-primary" style="cursor: pointer;">${n}</a>`
+            ).join(', ');
             neighborsBox.style.display = "block";
         } else {
             neighborsBox.style.display = "none";
