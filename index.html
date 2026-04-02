@@ -6,7 +6,6 @@
     <title>ระบบเช็คราคาวัสดุก่อสร้าง (Web Version)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; }
@@ -21,7 +20,6 @@
 
         .source-badge { font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; font-weight: 600; display: inline-block; margin-right: 5px; }
         .source-api { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
-        .source-file { background-color: #fff3cd; color: #664d03; border: 1px solid #ffecb5; }
 
         .compare-box {
             background-color: #e3f2fd;
@@ -37,6 +35,29 @@
         .diff-plus { color: #dc3545; font-weight: bold; }
         .diff-minus { color: #198754; font-weight: bold; }
 
+        #backToTopBtn {
+            display: none;
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1050;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: opacity 0.3s, transform 0.3s;
+            opacity: 0.8;
+            padding: 0;
+            line-height: 50px;
+            text-align: center;
+        }
+        #backToTopBtn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
         .sticky-search {
             position: sticky;
             top: 0;
@@ -46,17 +67,6 @@
             border-bottom: 1px solid #dee2e6;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-
-        .upload-zone { 
-            border: 2px dashed #ced4da; 
-            border-radius: 8px; 
-            padding: 30px; 
-            text-align: center; 
-            cursor: pointer; 
-            background: white; 
-            transition: 0.2s;
-        }
-        .upload-zone:hover { border-color: #0d6efd; background-color: #f8f9fa; }
 
         @media print {
             .no-print { display: none !important; }
@@ -71,62 +81,35 @@
 
 <div class="header-box text-center no-print">
     <h4 class="mb-1">ระบบเช็คราคาวัสดุก่อสร้าง</h4>
-    <small class="text-white-50">GitHub Web Version (V.19)</small>
 </div>
 
 <div class="container">
     <div class="card p-3 mb-3 no-print shadow-sm border-0 bg-white">
-        <ul class="nav nav-tabs mb-3" id="pills-tab" role="tablist">
-            <li class="nav-item">
-                <button class="nav-link fw-bold active" id="pills-file-tab" data-bs-toggle="pill" data-bs-target="#pills-file" type="button">📂 เปิดไฟล์ Excel (แนะนำ)</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link fw-bold" id="pills-api-tab" data-bs-toggle="pill" data-bs-target="#pills-api" type="button">📡 ดึงผ่าน API</button>
-            </li>
-        </ul>
-
-        <div class="tab-content" id="pills-tabContent">
-            
-            <div class="tab-pane fade show active" id="pills-file">
-                <div class="alert alert-info py-2 small border-0">
-                    <i class="bi bi-info-circle"></i> เนื่องจากทำงานบนเว็บ แนะนำให้โหลดไฟล์ Excel จากเว็บ สนค. มาใช้งานเพื่อความรวดเร็วและแม่นยำที่สุด
+        <div id="api-search-box">
+            <h6 class="text-primary fw-bold mb-3">📡 ค้นหาข้อมูล (เชื่อมต่อ API สนค.)</h6>
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">จังหวัดหลัก</label>
+                    <select id="provinceSelect" class="form-select"></select>
                 </div>
-                <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
-                    <h6 class="text-dark mb-1">📄 คลิกเพื่อเลือกไฟล์ Excel / CSV</h6>
-                    <small class="text-muted">ระบบจะอ่านหมวดหมู่, เดือน และราคาให้อัตโนมัติ</small>
-                    <input type="file" id="fileInput" class="d-none" accept=".xlsx, .xls, .csv" onchange="handleFileUpload(this)">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">เดือน</label>
+                    <select id="monthSelect" class="form-select"></select>
                 </div>
-                <div id="fileInfoBox" class="mt-2 p-2 bg-light rounded border small text-success" style="display:none;"></div>
-            </div>
-
-            <div class="tab-pane fade" id="pills-api">
-                <div class="row g-2 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted">จังหวัดหลัก</label>
-                        <select id="provinceSelect" class="form-select"></select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small text-muted">เดือน</label>
-                        <select id="monthSelect" class="form-select"></select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small text-muted">ปี พ.ศ.</label>
-                        <select id="yearSelect" class="form-select">
-                            <option value="2569">2569</option>
-                            <option value="2568">2568</option>
-                            <option value="2567">2567</option>
-                            <option value="2566">2566</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button onclick="fetchData()" class="btn btn-primary w-100 fw-bold">🔍 ค้นหา</button>
-                    </div>
-                    <div class="col-md-2">
-                        <button onclick="toggleCompare()" id="btnCompare" class="btn btn-outline-dark w-100">⚖️ เปรียบเทียบ</button>
-                    </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">ปี พ.ศ.</label>
+                    <select id="yearSelect" class="form-select">
+                        <option value="2569">2569</option>
+                        <option value="2568">2568</option>
+                        <option value="2567">2567</option>
+                        <option value="2566">2566</option>
+                    </select>
                 </div>
-                <div class="form-text text-muted small mt-2">
-                    * การดึง API บนเว็บฟรีอาจล่าช้าหรือถูกบล็อกในบางช่วงเวลา (เพราะไม่มี Python Server ช่วย)
+                <div class="col-md-2">
+                    <button onclick="fetchData()" class="btn btn-primary w-100 fw-bold">🔍 ค้นหา</button>
+                </div>
+                <div class="col-md-2">
+                    <button onclick="toggleCompare()" id="btnCompare" class="btn btn-outline-dark w-100">⚖️ เปรียบเทียบ</button>
                 </div>
             </div>
         </div>
@@ -157,7 +140,7 @@
 
         <div id="categorySection" class="mt-3 pt-3 border-top" style="display:none;">
             <label class="form-label fw-bold small text-success">🏷️ กรองหมวดหมู่ (ดึงจากข้อมูล)</label>
-            <select id="categorySelect" class="form-select form-select-sm" onchange="filterTable()">
+            <select id="categorySelect" class="form-select form-select-sm" onchange="renderTable()">
                 <option value="">-- แสดงทั้งหมด --</option>
             </select>
         </div>
@@ -167,7 +150,7 @@
         <div class="container">
             <div class="input-group">
                 <span class="input-group-text bg-white border-end-0">🔎</span>
-                <input type="text" id="searchInput" class="form-control border-start-0" placeholder="พิมพ์ชื่อวัสดุ..." onkeyup="filterTable()">
+                <input type="text" id="searchInput" class="form-control border-start-0" placeholder="พิมพ์ชื่อวัสดุ..." onkeyup="renderTable()">
                 <button class="btn btn-outline-secondary" onclick="clearSearch()">ล้าง</button>
             </div>
         </div>
@@ -198,13 +181,37 @@
     </div>
 </div>
 
+<button id="backToTopBtn" class="btn btn-primary no-print" onclick="window.scrollTo({top: 0, behavior: 'smooth'});" title="ขึ้นด้านบนสุด">▲</button>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // --- Global Variables ---
     let mainData = [];
     let compareData = [];
     let isCompareMode = false;
-    let mainSourceType = 'api';
+
+    const CATEGORY_MAP = {
+        '01': 'ไม้และผลิตภัณฑ์ไม้',
+        '02': 'ซีเมนต์',
+        '03': 'ผลิตภัณฑ์คอนกรีต',
+        '04': 'เหล็กและผลิตภัณฑ์เหล็ก',
+        '05': 'กระเบื้อง',
+        '06': 'วัสดุฉาบผิว',
+        '07': 'สุขภัณฑ์',
+        '08': 'อุปกรณ์ไฟฟ้าและประปา',
+        '09': 'วัสดุก่อสร้างอื่นๆ',
+        '10': 'งานไม้',
+        '11': 'งานปูน',
+        '12': 'งานคอนกรีต',
+        '13': 'งานเหล็ก',
+        '14': 'งานกระเบื้อง',
+        '15': 'งานสี/ฉาบ',
+        '16': 'งานสุขภัณฑ์',
+        '18': 'งานกระจก/พลาสติก',
+        '19': 'งานระบบท่อ',
+        '20': 'งานตกแต่งอื่นๆ',
+        '21': 'งานอุปกรณ์ไฟฟ้า/ประปา'
+    };
 
     // รายชื่อ Proxy ที่จะวนลูปใช้ (จำเป็นสำหรับ Web Version)
     const PROXIES = [
@@ -213,10 +220,22 @@
     ];
 
     const provinces = [
-        {id:10,name:"กรุงเทพมหานคร"}, {id:35,name:"ยโสธร"}, {id:11,name:"สมุทรปราการ"}, {id:12,name:"นนทบุรี"},
-        {id:13,name:"ปทุมธานี"}, {id:14,name:"พระนครศรีอยุธยา"}, {id:20,name:"ชลบุรี"}, {id:21,name:"ระยอง"},
-        {id:30,name:"นครราชสีมา"}, {id:34,name:"อุบลราชธานี"}, {id:40,name:"ขอนแก่น"}, {id:50,name:"เชียงใหม่"},
-        {id:90,name:"สงขลา"}, {id:83,name:"ภูเก็ต"}
+        {id:10,name:"กรุงเทพมหานคร"}, {id:11,name:"สมุทรปราการ"}, {id:12,name:"นนทบุรี"}, {id:13,name:"ปทุมธานี"}, {id:14,name:"พระนครศรีอยุธยา"},
+        {id:15,name:"อ่างทอง"}, {id:16,name:"ลพบุรี"}, {id:17,name:"สิงห์บุรี"}, {id:18,name:"ชัยนาท"}, {id:19,name:"สระบุรี"},
+        {id:20,name:"ชลบุรี"}, {id:21,name:"ระยอง"}, {id:22,name:"จันทบุรี"}, {id:23,name:"ตราด"}, {id:24,name:"ฉะเชิงเทรา"},
+        {id:25,name:"ปราจีนบุรี"}, {id:26,name:"นครนายก"}, {id:27,name:"สระแก้ว"}, {id:30,name:"นครราชสีมา"}, {id:31,name:"บุรีรัมย์"},
+        {id:32,name:"สุรินทร์"}, {id:33,name:"ศรีสะเกษ"}, {id:34,name:"อุบลราชธานี"}, {id:35,name:"ยโสธร"}, {id:36,name:"ชัยภูมิ"},
+        {id:37,name:"อำนาจเจริญ"}, {id:38,name:"บึงกาฬ"}, {id:39,name:"หนองบัวลำภู"}, {id:40,name:"ขอนแก่น"}, {id:41,name:"อุดรธานี"},
+        {id:42,name:"เลย"}, {id:43,name:"หนองคาย"}, {id:44,name:"มหาสารคาม"}, {id:45,name:"ร้อยเอ็ด"}, {id:46,name:"กาฬสินธุ์"},
+        {id:47,name:"สกลนคร"}, {id:48,name:"นครพนม"}, {id:49,name:"มุกดาหาร"}, {id:50,name:"เชียงใหม่"}, {id:51,name:"ลำพูน"},
+        {id:52,name:"ลำปาง"}, {id:53,name:"อุตรดิตถ์"}, {id:54,name:"แพร่"}, {id:55,name:"น่าน"}, {id:56,name:"พะเยา"},
+        {id:57,name:"เชียงราย"}, {id:58,name:"แม่ฮ่องสอน"}, {id:60,name:"นครสวรรค์"}, {id:61,name:"อุทัยธานี"}, {id:62,name:"กำแพงเพชร"},
+        {id:63,name:"ตาก"}, {id:64,name:"สุโขทัย"}, {id:65,name:"พิษณุโลก"}, {id:66,name:"พิจิตร"}, {id:67,name:"เพชรบูรณ์"},
+        {id:70,name:"ราชบุรี"}, {id:71,name:"กาญจนบุรี"}, {id:72,name:"สุพรรณบุรี"}, {id:73,name:"นครปฐม"}, {id:74,name:"สมุทรสาคร"},
+        {id:75,name:"สมุทรสงคราม"}, {id:76,name:"เพชรบุรี"}, {id:77,name:"ประจวบคีรีขันธ์"}, {id:80,name:"นครศรีธรรมราช"}, {id:81,name:"กระบี่"},
+        {id:82,name:"พังงา"}, {id:83,name:"ภูเก็ต"}, {id:84,name:"สุราษฎร์ธานี"}, {id:85,name:"ระนอง"}, {id:86,name:"ชุมพร"},
+        {id:90,name:"สงขลา"}, {id:91,name:"สตูล"}, {id:92,name:"ตรัง"}, {id:93,name:"พัทลุง"}, {id:94,name:"ปัตตานี"},
+        {id:95,name:"ยะลา"}, {id:96,name:"นราธิวาส"}
     ];
 
     window.onload = function() {
@@ -304,7 +323,7 @@
 
         if(!isRetry) {
             document.getElementById('resultSection').style.display = 'block';
-            updateUIState('api', 'กำลังเชื่อมต่อ...');
+            updateUIState('กำลังเชื่อมต่อ...');
             tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary"></div> กำลังพยายามดึงข้อมูลผ่าน Proxy...</td></tr>';
         }
 
@@ -322,14 +341,13 @@
         }
 
         if (items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-5">❌ ไม่พบข้อมูล (API ขัดข้อง กรุณาใช้ไฟล์ Excel)</td></tr>';
-            updateUIState('api', 'ไม่พบข้อมูล');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-5">❌ ไม่พบข้อมูล (API อาจขัดข้อง)</td></tr>';
+            updateUIState('ไม่พบข้อมูล');
             return;
         }
 
         mainData = normalizeData(items);
-        mainSourceType = 'api';
-        updateUIState('api', `สำเร็จ (${mainData.length} รายการ)`);
+        updateUIState(`สำเร็จ (${mainData.length} รายการ)`);
         updateHeader();
         populateCategories(mainData);
         renderTable();
@@ -354,50 +372,6 @@
         renderTable();
     }
 
-    function handleFileUpload(input) {
-        const file = input.files[0];
-        if(!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            
-            const cellA3 = firstSheet['A3'] ? firstSheet['A3'].v : "";
-            let detProv = (typeof cellA3 === 'string' && cellA3.includes("ส่วนกลาง")) ? "ส่วนกลาง (กทม.)" : "ข้อมูลจากไฟล์";
-
-            const jsonData = XLSX.utils.sheet_to_json(firstSheet, {range: 4}); 
-            mainData = jsonData.map(row => {
-                const priceKey = Object.keys(row).find(k => k.match(/ม\.ค|ก\.พ|มี\.ค|เม\.ย|พ\.ค|มิ\.ย|ก\.ค|ส\.ค|ก\.ย|ต\.ค|พ\.ย|ธ\.ค|มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม/));
-                const finalPriceKey = priceKey || Object.keys(row).pop(); 
-
-                let catCode = String(row['รหัสหมวด'] || '').trim();
-                if(catCode.length === 1) catCode = '0' + catCode;
-
-                return {
-                    code: String(row['รหัส'] || ''),
-                    name: String(row['รายการ'] || ''),
-                    unit: String(row['หน่วย'] || ''),
-                    price: row[finalPriceKey] || 0,
-                    catCode: catCode,
-                    catName: row['ชื่อหมวดสินค้า'] || ''
-                };
-            }).filter(d => d.name);
-
-            mainSourceType = 'file';
-            document.getElementById('resultSection').style.display = 'block';
-            document.getElementById('fileInfoBox').innerText = `อ่านไฟล์สำเร็จ: ${detProv} (${mainData.length} รายการ)`;
-            document.getElementById('fileInfoBox').style.display = 'block';
-            document.getElementById('resultTitle').innerText = `${detProv} (FILE)`;
-            
-            updateUIState('file', 'โหลดสำเร็จ');
-            populateCategories(mainData);
-            renderTable();
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
     function normalizeData(apiItems) {
         return apiItems.map(item => {
             const code = String(item.commodityCode || '');
@@ -408,7 +382,7 @@
                 unit: item.unitName || '',
                 price: item.priceCur || 0,
                 catCode: prefix,
-                catName: `หมวด ${prefix}`
+                catName: CATEGORY_MAP[prefix] || `หมวด ${prefix}`
             };
         });
     }
@@ -439,8 +413,7 @@
         const searchKw = document.getElementById('searchInput').value.toLowerCase().trim();
         const catKw = document.getElementById('categorySelect').value;
         
-        let pName1 = (mainSourceType==='api') ? 
-            (provinces.find(p=>p.id==document.getElementById('provinceSelect').value)?.name || 'หลัก') : 'ไฟล์ Excel';
+        let pName1 = provinces.find(p=>p.id==document.getElementById('provinceSelect').value)?.name || 'หลัก';
         
         let headerHTML = `
             <th style="width:15%">รหัส</th>
@@ -516,10 +489,10 @@
     }
     function fmt(val) { return val.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 
-    function updateUIState(source, text) {
+    function updateUIState(text) {
         const badge = document.getElementById('sourceIndicator');
-        badge.className = source === 'api' ? 'source-badge source-api' : 'source-badge source-file';
-        badge.innerText = source === 'api' ? `API: ${text}` : `FILE: ${text}`;
+        badge.className = 'source-badge source-api';
+        badge.innerText = `API: ${text}`;
         if (text.includes("สำเร็จ")) document.getElementById('statusText').innerText = "";
     }
 
@@ -532,7 +505,16 @@
         document.getElementById('resultTitle').innerText = `${pName} | ${mName} ${yid}`;
     }
 
-    function clearSearch() { document.getElementById('searchInput').value = ""; filterTable(); }
+    function clearSearch() { document.getElementById('searchInput').value = ""; renderTable(); }
+
+    window.onscroll = function() {
+        const btn = document.getElementById("backToTopBtn");
+        if (document.body.scrollTop > 400 || document.documentElement.scrollTop > 400) {
+            btn.style.display = "block";
+        } else {
+            btn.style.display = "none";
+        }
+    };
 </script>
 
 </body>
