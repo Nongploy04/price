@@ -341,7 +341,7 @@
         return [];
     }
 
-    async function fetchData(isRetry = false) {
+    async function fetchData(retryCount = 0, origSearch = null) {
         const pid = document.getElementById('provinceSelect').value;
         const mid = document.getElementById('monthSelect').value;
         const yid = document.getElementById('yearSelect').value;
@@ -349,36 +349,50 @@
 
         if(!pid) return alert("เลือกจังหวัดหลัก");
 
-        if(!isRetry) {
+        if(retryCount === 0) {
             document.getElementById('resultSection').style.display = 'block';
             updateUIState('กำลังเชื่อมต่อ...');
             tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary"></div> กำลังพยายามดึงข้อมูลผ่าน Proxy...</td></tr>';
+            origSearch = { mid, yid };
         }
 
         let items = await fetchFromAPI(pid, mid, yid);
+        
+        const MAX_RETRIES = 6;
 
-        if (items.length === 0 && !isRetry) {
+        if (items.length === 0 && retryCount < MAX_RETRIES) {
             let prevM = parseInt(mid) - 1;
             let prevY = parseInt(yid);
             if(prevM===0){ prevM=12; prevY--; }
             document.getElementById('monthSelect').value = prevM;
             document.getElementById('yearSelect').value = prevY;
-            document.getElementById('statusText').innerText = `ไม่พบข้อมูลเดือนปัจจุบัน.. ลองย้อนหลัง (${prevM}/${prevY})`;
-            fetchData(true);
+            document.getElementById('statusText').innerHTML = `ไม่พบข้อมูล.. กำลังย้อนหาเดือน ${prevM}/${prevY} <small class="text-muted">(${retryCount+1}/${MAX_RETRIES})</small>`;
+            
+            // เรียกซ้ำด้วยเดือนที่ลดลงไปแล้ว
+            fetchData(retryCount + 1, origSearch);
             return;
         }
 
         if (items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-5">❌ ไม่พบข้อมูล (API อาจขัดข้อง)</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-5">❌ ไม่พบข้อมูล (ย้อนหลังค้นหา ${MAX_RETRIES} เดือนก็ยังไม่มี หรือระบบ API อาจขัดข้อง)</td></tr>`;
             updateUIState('ไม่พบข้อมูล');
             return;
         }
 
         mainData = normalizeData(items);
-        updateUIState(`สำเร็จ (${mainData.length} รายการ)`);
+        updateUIState(`สำเร็จ (${mainData.length} รายการ)`, true);
         updateHeader();
         populateCategories(mainData);
         renderTable();
+        
+        if (retryCount > 0) {
+            const mNames = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+            const origMName = mNames[parseInt(origSearch.mid) - 1];
+            const foundMName = mNames[parseInt(mid) - 1];
+            document.getElementById('statusText').innerHTML = `<span class="badge bg-warning text-dark me-2">แจ้งเตือน</span> <span class="text-danger">ไม่พบข้อมูลของ ${origMName} ${origSearch.yid}</span> <span class="text-success fw-bold ms-1">→ ไปเจอข้อมูลล่าสุดเดือน ${foundMName} ${yid}</span>`;
+        } else {
+            document.getElementById('statusText').innerText = "";
+        }
     }
 
     async function fetchCompareData() {
@@ -517,11 +531,11 @@
     }
     function fmt(val) { return val.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 
-    function updateUIState(text) {
+    function updateUIState(text, retainStatus = false) {
         const badge = document.getElementById('sourceIndicator');
         badge.className = 'source-badge source-api';
         badge.innerText = `API: ${text}`;
-        if (text.includes("สำเร็จ")) document.getElementById('statusText').innerText = "";
+        if (text.includes("สำเร็จ") && !retainStatus) document.getElementById('statusText').innerText = "";
     }
 
     function updateHeader() {
