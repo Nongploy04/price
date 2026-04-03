@@ -390,8 +390,14 @@
             const origMName = mNames[parseInt(origSearch.mid) - 1];
             const foundMName = mNames[parseInt(mid) - 1];
             document.getElementById('statusText').innerHTML = `<span class="badge bg-warning text-dark me-2">แจ้งเตือน</span> <span class="text-danger">ไม่พบข้อมูลของ ${origMName} ${origSearch.yid}</span> <span class="text-success fw-bold ms-1">→ ไปเจอข้อมูลล่าสุดเดือน ${foundMName} ${yid}</span>`;
+            
+            if (window.statusTimeout) clearTimeout(window.statusTimeout);
+            window.statusTimeout = setTimeout(() => {
+                document.getElementById('statusText').innerHTML = "";
+            }, 8000); // ซ่อนหลังจาก 8 วินาที
         } else {
             document.getElementById('statusText').innerText = "";
+            if (window.statusTimeout) clearTimeout(window.statusTimeout);
         }
     }
 
